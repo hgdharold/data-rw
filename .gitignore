@@ -1,0 +1,6 @@
+.idea/
+
+# 自定义
+
+target/
+src/test/java/com/hgd/data/temp
