@@ -4,6 +4,7 @@ import com.hgd.data.rw.common.Helper;
 import com.hgd.data.rw.customized.CustomXssfSheetXmlHandler;
 import com.hgd.data.rw.customized.CustomXssfSheetXmlHandler.SheetStyle;
 import com.hgd.data.rw.customized.CustomXssfSheetXmlHandler.StyledRow;
+import com.hgd.data.rw.customized.PlainNumFormatterCglibProxy;
 import com.hgd.data.rw.customized.StyledSheetContentsHandler;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -51,7 +52,10 @@ public class StyledExcelReader extends AbstractExcelReader<StyledRow> {
 
     @Override
     protected DefaultHandler getContentHandler(StylesTable stylesTable, SharedStrings sharedStrings) {
-        return new CustomXssfSheetXmlHandler(stylesTable, sharedStrings, getSheetContentsHandler(), new DataFormatter(), false);
+        DataFormatter dataFormatter = new DataFormatter();
+        PlainNumFormatterCglibProxy numFormatterCglibProxy = new PlainNumFormatterCglibProxy(dataFormatter);
+        return new CustomXssfSheetXmlHandler(stylesTable, sharedStrings, getSheetContentsHandler(),
+                numFormatterCglibProxy.createProxy(), false);
     }
 
     protected CustomXssfSheetXmlHandler.SheetContentsHandler getSheetContentsHandler() {
