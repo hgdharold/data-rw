@@ -7,6 +7,7 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.openxml4j.opc.OPCPackage;
 import org.apache.poi.openxml4j.opc.PackageAccess;
+import org.apache.poi.openxml4j.util.ZipSecureFile;
 import org.apache.poi.xssf.eventusermodel.ReadOnlySharedStringsTable;
 import org.apache.poi.xssf.eventusermodel.XSSFReader;
 import org.apache.poi.xssf.model.SharedStrings;
@@ -70,6 +71,7 @@ public abstract class AbstractExcelReader<T> extends AbstractReader<T> {
     }
 
     protected void init() throws Exception {
+        ZipSecureFile.setMinInflateRatio(0.005);
         pkg = OPCPackage.open(file, PackageAccess.READ);
         XSSFReader xssfReader = new XSSFReader(pkg);
         stylesTable = xssfReader.getStylesTable();
