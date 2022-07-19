@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 
@@ -39,6 +40,7 @@ import java.util.function.BiConsumer;
 @Slf4j
 public abstract class AbstractExcelReader<T> extends AbstractReader<T> {
 
+    protected final Locale locale;
     protected final int skipRows;
     protected final int maxColumnNum;
     @Getter
@@ -62,8 +64,9 @@ public abstract class AbstractExcelReader<T> extends AbstractReader<T> {
     @Setter
     protected Runnable endCall;
 
-    protected AbstractExcelReader(AbstractBuilder builder) {
+    protected AbstractExcelReader(AbstractExcelReaderBuilder builder) {
         super(builder.file);
+        this.locale = builder.locale;
         this.skipRows = builder.skipRows;
         this.maxColumnNum = builder.maxColumnNum;
         this.sheetIndex = builder.sheetIndex;
@@ -159,15 +162,24 @@ public abstract class AbstractExcelReader<T> extends AbstractReader<T> {
     }
 
     @SuppressWarnings("unchecked")
-    public static abstract class AbstractBuilder<T extends AbstractBuilder<T>> {
+    public static abstract class AbstractExcelReaderBuilder<T extends AbstractExcelReaderBuilder<T>> {
         protected File file;
+        private Locale locale;
         private int skipRows = 0;
         private int maxColumnNum;
         private int sheetIndex = 0;
         private String sheetName;
 
-        protected AbstractBuilder(File file) {
+        protected AbstractExcelReaderBuilder(File file) {
             this.file = file;
+        }
+
+        /**
+         * 设定Locale
+         */
+        public T locale(Locale locale) {
+            this.locale = locale;
+            return (T) this;
         }
 
         /**

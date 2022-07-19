@@ -32,7 +32,7 @@ public class StyledExcelReader extends AbstractExcelReader<StyledRow> {
     @Getter
     private SheetStyle sheetStyle = new SheetStyle();
 
-    private StyledExcelReader(Builder builder) {
+    private StyledExcelReader(StyledExcelReaderBuilder builder) {
         super(builder);
     }
 
@@ -52,7 +52,7 @@ public class StyledExcelReader extends AbstractExcelReader<StyledRow> {
 
     @Override
     protected DefaultHandler getContentHandler(StylesTable stylesTable, SharedStrings sharedStrings) {
-        DataFormatter dataFormatter = new DataFormatter();
+        DataFormatter dataFormatter = new DataFormatter(locale);
         PlainNumFormatterCglibProxy numFormatterCglibProxy = new PlainNumFormatterCglibProxy(dataFormatter);
         return new CustomXssfSheetXmlHandler(stylesTable, sharedStrings, getSheetContentsHandler(),
                 numFormatterCglibProxy.createProxy(), false);
@@ -64,9 +64,9 @@ public class StyledExcelReader extends AbstractExcelReader<StyledRow> {
         return sheetHandler;
     }
 
-    public static class Builder extends AbstractBuilder<Builder> {
+    public static class StyledExcelReaderBuilder extends AbstractExcelReaderBuilder<StyledExcelReaderBuilder> {
 
-        private Builder(File file) {
+        private StyledExcelReaderBuilder(File file) {
             super(file);
         }
 
@@ -83,8 +83,8 @@ public class StyledExcelReader extends AbstractExcelReader<StyledRow> {
         }
     }
 
-    public static Builder builder(File file) {
-        return new Builder(file);
+    public static StyledExcelReaderBuilder builder(File file) {
+        return new StyledExcelReaderBuilder(file);
     }
 
     private static final class DefaultRowConsumer implements BiConsumer<StyledRow, Long> {

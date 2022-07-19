@@ -25,13 +25,13 @@ import java.util.function.BiConsumer;
 @Slf4j
 public class DefaultExcelReader extends AbstractExcelReader<String[]> {
 
-    private DefaultExcelReader(Builder builder) {
+    private DefaultExcelReader(DefaultExcelReaderBuilder builder) {
         super(builder);
     }
 
     @Override
     protected DefaultHandler getContentHandler(StylesTable stylesTable, SharedStrings sharedStrings) {
-        DataFormatter dataFormatter = new DataFormatter();
+        DataFormatter dataFormatter = new DataFormatter(locale);
         PlainNumFormatterCglibProxy numFormatterCglibProxy = new PlainNumFormatterCglibProxy(dataFormatter);
         return new XSSFSheetXMLHandler(stylesTable, sharedStrings, getSheetContentsHandler(),
                 numFormatterCglibProxy.createProxy(), false);
@@ -60,9 +60,9 @@ public class DefaultExcelReader extends AbstractExcelReader<String[]> {
         return storage.iterator();
     }
 
-    public static class Builder extends AbstractBuilder<Builder> {
+    public static class DefaultExcelReaderBuilder extends AbstractExcelReaderBuilder<DefaultExcelReaderBuilder> {
 
-        private Builder(File file) {
+        private DefaultExcelReaderBuilder(File file) {
             super(file);
         }
 
@@ -79,8 +79,8 @@ public class DefaultExcelReader extends AbstractExcelReader<String[]> {
         }
     }
 
-    public static Builder builder(File file) {
-        return new DefaultExcelReader.Builder(file);
+    public static DefaultExcelReaderBuilder builder(File file) {
+        return new DefaultExcelReaderBuilder(file);
     }
 
     private static final class DefaultRowConsumer implements BiConsumer<String[], Long> {
