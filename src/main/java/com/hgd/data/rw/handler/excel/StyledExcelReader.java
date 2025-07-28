@@ -4,7 +4,7 @@ import com.hgd.data.rw.common.Helper;
 import com.hgd.data.rw.customized.CustomXssfSheetXmlHandler;
 import com.hgd.data.rw.customized.CustomXssfSheetXmlHandler.SheetStyle;
 import com.hgd.data.rw.customized.CustomXssfSheetXmlHandler.StyledRow;
-import com.hgd.data.rw.customized.PlainNumFormatterCglibProxy;
+import com.hgd.data.rw.customized.PlainNumFormatterProxy;
 import com.hgd.data.rw.customized.StyledSheetContentsHandler;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -53,9 +53,12 @@ public class StyledExcelReader extends AbstractExcelReader<StyledRow> {
     @Override
     protected DefaultHandler getContentHandler(StylesTable stylesTable, SharedStrings sharedStrings) {
         DataFormatter dataFormatter = new DataFormatter(locale);
-        PlainNumFormatterCglibProxy numFormatterCglibProxy = new PlainNumFormatterCglibProxy(dataFormatter);
-        return new CustomXssfSheetXmlHandler(stylesTable, sharedStrings, getSheetContentsHandler(),
-                numFormatterCglibProxy.createProxy(), false);
+        try {
+            dataFormatter = PlainNumFormatterProxy.createProxy(dataFormatter);
+        } catch (InstantiationException | IllegalAccessException e) {
+            log.error("Failed to create proxy for DataFormatter", e);
+        }
+        return new CustomXssfSheetXmlHandler(stylesTable, sharedStrings, getSheetContentsHandler(), dataFormatter, false);
     }
 
     protected CustomXssfSheetXmlHandler.SheetContentsHandler getSheetContentsHandler() {

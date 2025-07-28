@@ -2,7 +2,7 @@ package com.hgd.data.rw.handler.excel;
 
 import com.hgd.data.rw.common.Helper;
 import com.hgd.data.rw.customized.DefaultSheetContentsHandler;
-import com.hgd.data.rw.customized.PlainNumFormatterCglibProxy;
+import com.hgd.data.rw.customized.PlainNumFormatterProxy;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.DataFormatter;
 import org.apache.poi.xssf.eventusermodel.XSSFSheetXMLHandler;
@@ -32,9 +32,12 @@ public class DefaultExcelReader extends AbstractExcelReader<String[]> {
     @Override
     protected DefaultHandler getContentHandler(StylesTable stylesTable, SharedStrings sharedStrings) {
         DataFormatter dataFormatter = new DataFormatter(locale);
-        PlainNumFormatterCglibProxy numFormatterCglibProxy = new PlainNumFormatterCglibProxy(dataFormatter);
-        return new XSSFSheetXMLHandler(stylesTable, sharedStrings, getSheetContentsHandler(),
-                numFormatterCglibProxy.createProxy(), false);
+        try {
+            dataFormatter = PlainNumFormatterProxy.createProxy(dataFormatter);
+        } catch (InstantiationException | IllegalAccessException e) {
+            log.error("Failed to create proxy for DataFormatter", e);
+        }
+        return new XSSFSheetXMLHandler(stylesTable, sharedStrings, getSheetContentsHandler(), dataFormatter, false);
     }
 
     protected XSSFSheetXMLHandler.SheetContentsHandler getSheetContentsHandler() {

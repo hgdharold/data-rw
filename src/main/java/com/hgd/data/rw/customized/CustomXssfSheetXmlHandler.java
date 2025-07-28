@@ -3,11 +3,10 @@ package com.hgd.data.rw.customized;
 
 import lombok.Data;
 import lombok.experimental.Accessors;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellAddress;
 import org.apache.poi.ss.util.CellRangeAddress;
-import org.apache.poi.util.POILogFactory;
-import org.apache.poi.util.POILogger;
 import org.apache.poi.xssf.eventusermodel.XSSFSheetXMLHandler;
 import org.apache.poi.xssf.model.Comments;
 import org.apache.poi.xssf.model.SharedStrings;
@@ -32,8 +31,8 @@ import static org.apache.poi.xssf.usermodel.XSSFRelation.NS_SPREADSHEETML;
  *
  * @author hgd
  */
+@Slf4j
 public class CustomXssfSheetXmlHandler extends DefaultHandler {
-    private static final POILogger logger = POILogFactory.getLogger(CustomXssfSheetXmlHandler.class);
 
     /**
      * These are the different kinds of cells we support.
@@ -315,7 +314,7 @@ public class CustomXssfSheetXmlHandler extends DefaultHandler {
                     // TODO Retrieve the shared formula and tweak it to 
                     //  match the current cell
                     if (formulasNotResults) {
-                        logger.log(POILogger.WARN, "shared formulas not yet supported!");
+                        log.warn("shared formulas not yet supported!");
                     } /*else {
                    // It's a shared formula, so we can't get at the formula string yet
                    // However, they don't care about the formula string, so that's ok!
@@ -404,7 +403,7 @@ public class CustomXssfSheetXmlHandler extends DefaultHandler {
                         RichTextString rtss = sharedStringsTable.getItemAt(idx);
                         thisStr = rtss.toString();
                     } catch (NumberFormatException ex) {
-                        logger.log(POILogger.ERROR, "Failed to parse SST index '" + sstIndex, ex);
+                        log.error("Failed to parse SST index '" + sstIndex, ex);
                     }
                     cellType = CellType.STRING;
                     break;
