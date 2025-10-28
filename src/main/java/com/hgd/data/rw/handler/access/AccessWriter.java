@@ -3,7 +3,7 @@ package com.hgd.data.rw.handler.access;
 import com.healthmarketscience.jackcess.Database;
 import com.healthmarketscience.jackcess.DatabaseBuilder;
 import com.healthmarketscience.jackcess.Table;
-import com.hgd.data.rw.common.AccessUtil;
+import com.hgd.data.rw.handler.access.customized.AccessUtil;
 import com.hgd.data.rw.handler.Writer;
 import lombok.extern.slf4j.Slf4j;
 

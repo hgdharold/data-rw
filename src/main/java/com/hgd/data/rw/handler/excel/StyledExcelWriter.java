@@ -1,16 +1,15 @@
 package com.hgd.data.rw.handler.excel;
 
-import com.hgd.data.rw.common.ExcelUtil;
-import com.hgd.data.rw.customized.CustomXssfSheetXmlHandler.SheetStyle;
 import com.hgd.data.rw.handler.Writer;
+import com.hgd.data.rw.handler.excel.customized.ExcelUtil;
+import com.hgd.data.rw.handler.excel.customized.StyledEleDef.SheetStyle;
+import com.hgd.data.rw.handler.excel.customized.StyledEleDef.StyledRow;
 import org.apache.poi.xssf.model.StylesTable;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
-
-import static com.hgd.data.rw.customized.CustomXssfSheetXmlHandler.StyledRow;
 
 /**
  * @author hgd
@@ -19,11 +18,10 @@ import static com.hgd.data.rw.customized.CustomXssfSheetXmlHandler.StyledRow;
  */
 public class StyledExcelWriter implements Writer<StyledRow> {
 
-    private XSSFSheet sheet;
-    private StylesTable stylesTable;
-    private SheetStyle sheetStyle;
-
-    private Map<Short, Short> styleIndexMap;
+    private final XSSFSheet sheet;
+    private final StylesTable stylesTable;
+    private final SheetStyle sheetStyle;
+    private final Map<Short, Short> styleIndexMap;
 
     public StyledExcelWriter(XSSFSheet sheet, StylesTable stylesTable, SheetStyle sheetStyle) {
         this.sheet = sheet;

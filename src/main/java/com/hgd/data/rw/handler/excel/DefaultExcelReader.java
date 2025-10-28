@@ -1,22 +1,18 @@
 package com.hgd.data.rw.handler.excel;
 
-import com.hgd.data.rw.common.Helper;
-import com.hgd.data.rw.customized.DefaultSheetContentsHandler;
-import com.hgd.data.rw.customized.PlainNumFormatterProxy;
+import com.hgd.data.rw.handler.excel.customized.DataFormatterPlainNumProxy;
+import com.hgd.data.rw.handler.excel.customized.DefaultSheetContentsHandler;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.DataFormatter;
 import org.apache.poi.xssf.eventusermodel.XSSFSheetXMLHandler;
+import org.apache.poi.xssf.eventusermodel.XSSFSheetXMLHandler.SheetContentsHandler;
+import org.apache.poi.xssf.model.Comments;
 import org.apache.poi.xssf.model.SharedStrings;
 import org.apache.poi.xssf.model.StylesTable;
-import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
 import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.function.BiConsumer;
+import java.util.Locale;
 
 /**
  * @author hgd
@@ -30,74 +26,45 @@ public class DefaultExcelReader extends AbstractExcelReader<String[]> {
     }
 
     @Override
-    protected DefaultHandler getContentHandler(StylesTable stylesTable, SharedStrings sharedStrings) {
-        DataFormatter dataFormatter = new DataFormatter(locale);
+    protected DefaultHandler getContentHandler(StylesTable stylesTable, SharedStrings sharedStrings, Comments comments) {
+        DataFormatter dataFormatter = new DataFormatter();
+        Locale locale = getLocale();
+        if (locale != null) {
+            dataFormatter = new DataFormatter(locale);
+        }
         try {
-            dataFormatter = PlainNumFormatterProxy.createProxy(dataFormatter);
+            dataFormatter = DataFormatterPlainNumProxy.createProxy(dataFormatter);
         } catch (InstantiationException | IllegalAccessException e) {
             log.error("Failed to create proxy for DataFormatter", e);
         }
-        return new XSSFSheetXMLHandler(stylesTable, sharedStrings, getSheetContentsHandler(), dataFormatter, false);
+        return new XSSFSheetXMLHandler(stylesTable, comments, sharedStrings, getSheetContentsHandler(), dataFormatter, false);
     }
 
-    protected XSSFSheetXMLHandler.SheetContentsHandler getSheetContentsHandler() {
-        return new DefaultSheetContentsHandler(skipRows, maxColumnNum, rowConsumer, endCall);
+    protected SheetContentsHandler getSheetContentsHandler() {
+        return new DefaultSheetContentsHandler(getSkipRows(), getMaxColumnNum(), getRowConsumer(), getEndCall());
     }
 
-    /**
-     * 同步方法，在解析完成后才会返回
-     *
-     * @return Iterator 注意，在解析发生异常时，会返回null
-     */
-    @Override
-    protected Iterator<String[]> genIterator() {
-        // new data storage
-        List<String[]> storage = new ArrayList<>();
-        // set default callback
-        setRowConsumer(new DefaultRowConsumer(storage));
-        try {
-            parse();
-        } catch (IOException | SAXException e) {
-            return null;
-        }
-        return storage.iterator();
-    }
-
-    public static class DefaultExcelReaderBuilder extends AbstractExcelReaderBuilder<DefaultExcelReaderBuilder> {
+    public static class DefaultExcelReaderBuilder extends AbstractExcelReaderBuilder<
+            DefaultExcelReader,
+            DefaultExcelReaderBuilder> {
 
         private DefaultExcelReaderBuilder(File file) {
             super(file);
         }
 
-        public DefaultExcelReader build() throws Exception {
-            DefaultExcelReader reader = null;
-            try {
-                reader = new DefaultExcelReader(this);
-                reader.init();
-                return reader;
-            } catch (Exception e) {
-                Helper.closeQuietly(reader);
-                throw e;
-            }
+        @Override
+        protected DefaultExcelReaderBuilder self() {
+            return this;
+        }
+
+        @Override
+        protected DefaultExcelReader createReader() {
+            return new DefaultExcelReader(this);
         }
     }
 
     public static DefaultExcelReaderBuilder builder(File file) {
         return new DefaultExcelReaderBuilder(file);
-    }
-
-    private static final class DefaultRowConsumer implements BiConsumer<String[], Long> {
-
-        private List<String[]> storage;
-
-        private DefaultRowConsumer(List<String[]> storage) {
-            this.storage = storage;
-        }
-
-        @Override
-        public void accept(String[] row, Long idx) {
-            storage.add(row);
-        }
     }
 
 }

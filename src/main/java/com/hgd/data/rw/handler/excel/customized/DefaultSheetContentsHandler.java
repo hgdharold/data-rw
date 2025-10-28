@@ -1,4 +1,4 @@
-package com.hgd.data.rw.customized;
+package com.hgd.data.rw.handler.excel.customized;
 
 import org.apache.poi.ss.util.CellReference;
 import org.apache.poi.xssf.eventusermodel.XSSFSheetXMLHandler;
@@ -15,8 +15,8 @@ public class DefaultSheetContentsHandler implements XSSFSheetXMLHandler.SheetCon
 
     protected int skipRows;
     protected int maxColumnNum;
-    private BiConsumer<String[], Long> rowConsumer;
-    private Runnable endCall;
+    private final BiConsumer<String[], Long> rowConsumer;
+    private final Runnable endCall;
 
     private int skipped = 0;
     private boolean skipCurrentRow = false;

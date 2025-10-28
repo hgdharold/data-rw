@@ -1,7 +1,8 @@
-package com.hgd.data.rw.common;
+package com.hgd.data.rw.handler.excel.customized;
 
-import com.hgd.data.rw.customized.CustomXssfSheetXmlHandler;
-import com.hgd.data.rw.customized.CustomXssfSheetXmlHandler.StyledCell;
+import com.hgd.data.rw.handler.excel.customized.StyledEleDef.SheetStyle;
+import com.hgd.data.rw.handler.excel.customized.StyledEleDef.StyledCell;
+import com.hgd.data.rw.handler.excel.customized.StyledEleDef.StyledRow;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -16,9 +17,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import static com.hgd.data.rw.customized.CustomXssfSheetXmlHandler.SheetStyle;
-import static com.hgd.data.rw.customized.CustomXssfSheetXmlHandler.StyledRow;
 
 /**
  * Excel工具类
@@ -113,7 +111,7 @@ public class ExcelUtil {
     private static final String TRUE = "TRUE";
 
     private static void addRowWithStyleToSheet(Map<Short, Short> indexMap, Sheet sheet, StyledRow row, int rowIndex) {
-        if (sheet != null && row != null && row.getCells().size() > 0) {
+        if (sheet != null && row != null && !row.getCells().isEmpty()) {
             Row newRow = sheet.createRow(rowIndex);
             if (row.getHeight() != null) {
                 newRow.setHeightInPoints(row.getHeight());
@@ -122,7 +120,7 @@ public class ExcelUtil {
                 int newRowStyleIdx = indexMap.get(row.getStyle().getIndex());
                 newRow.setRowStyle(sheet.getWorkbook().getCellStyleAt(newRowStyleIdx));
             }
-            List<CustomXssfSheetXmlHandler.StyledCell> rowData = row.getCells();
+            List<StyledCell> rowData = row.getCells();
             for (StyledCell cellInfo : rowData) {
                 if (cellInfo != null) {
                     Cell cell = CellUtil.getCell(newRow, cellInfo.getCol());
@@ -154,6 +152,19 @@ public class ExcelUtil {
                 }
             }
         }
+    }
+
+    private static int getCellIndex(String cellReference) {
+        String ref = cellReference.replaceAll("\\d+", "");
+        int num = 0;
+        int result = 0;
+        for (int i = 0; i < ref.length(); i++) {
+            char ch = cellReference.charAt(ref.length() - i - 1);
+            num = ch - 'A' + 1;
+            num *= (int) Math.pow(26, i);
+            result += num;
+        }
+        return result - 1;
     }
 
 }

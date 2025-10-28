@@ -1,8 +1,8 @@
-package com.hgd.data.rw.customized;
+package com.hgd.data.rw.handler.excel.customized;
 
-import com.hgd.data.rw.customized.CustomXssfSheetXmlHandler.SheetStyle;
-import com.hgd.data.rw.customized.CustomXssfSheetXmlHandler.StyledCell;
-import com.hgd.data.rw.customized.CustomXssfSheetXmlHandler.StyledRow;
+import com.hgd.data.rw.handler.excel.customized.StyledEleDef.SheetStyle;
+import com.hgd.data.rw.handler.excel.customized.StyledEleDef.StyledCell;
+import com.hgd.data.rw.handler.excel.customized.StyledEleDef.StyledRow;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.CellStyle;
@@ -12,8 +12,6 @@ import org.apache.poi.xssf.usermodel.XSSFCellStyle;
 import org.apache.poi.xssf.usermodel.XSSFComment;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.function.BiConsumer;
 
 /**
@@ -22,40 +20,25 @@ import java.util.function.BiConsumer;
  */
 
 @Slf4j
-public class StyledSheetContentsHandler implements CustomXssfSheetXmlHandler.SheetContentsHandler {
+public class StyledSheetContentsHandler implements CustomXssfSheetXmlHandler.CustomSheetContentsHandler {
 
     private final int skipRows;
     private final int maxColumnNum;
+    private final BiConsumer<StyledRow, Long> rowConsumer;
+    private final Runnable endCall;
+
     private int skipped = 0;
     private boolean skipCurrentRow = false;
-
     private StyledRow row;
-    private BiConsumer<StyledRow, Long> rowConsumer;
-    private Runnable endCall;
-
     private long index;
     @Getter
-    private SheetStyle sheetStyle = new SheetStyle();
+    private final SheetStyle sheetStyle = new SheetStyle();
 
     public StyledSheetContentsHandler(int skipRows, int maxColumnNum, BiConsumer<StyledRow, Long> rowConsumer, Runnable endCall) {
         this.skipRows = skipRows;
         this.maxColumnNum = maxColumnNum;
         this.rowConsumer = rowConsumer;
         this.endCall = endCall;
-    }
-
-    @Override
-    public void startSheetData(SheetStyle sheetStyle) {
-        this.sheetStyle.setDefaultRowHeight(sheetStyle.getDefaultRowHeight());
-        this.sheetStyle.setDefaultColumnWidth(sheetStyle.getDefaultColumnWidth());
-        this.sheetStyle.setColumnWidth(sheetStyle.getColumnWidth());
-        Map<Integer, CellStyle> columnStyle = new HashMap<>(64);
-        sheetStyle.getColumnStyle().forEach((k, v) -> {
-            if (v != null) {
-                columnStyle.put(k, v);
-            }
-        });
-        this.sheetStyle.setColumnStyle(columnStyle);
     }
 
     @Override
@@ -92,7 +75,7 @@ public class StyledSheetContentsHandler implements CustomXssfSheetXmlHandler.She
     }
 
     @Override
-    public void endRow(int rowNum) {
+    public void endRow(int rowNum, CellStyle rowStyle, Short height) {
         if (!skipCurrentRow) {
             rowConsumer.accept(row, index);
             index++;

@@ -10,6 +10,7 @@ import org.apache.poi.openxml4j.opc.PackageAccess;
 import org.apache.poi.openxml4j.util.ZipSecureFile;
 import org.apache.poi.xssf.eventusermodel.ReadOnlySharedStringsTable;
 import org.apache.poi.xssf.eventusermodel.XSSFReader;
+import org.apache.poi.xssf.model.Comments;
 import org.apache.poi.xssf.model.SharedStrings;
 import org.apache.poi.xssf.model.StylesTable;
 import org.xml.sax.InputSource;
@@ -23,6 +24,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -40,31 +42,38 @@ import java.util.function.BiConsumer;
 @Slf4j
 public abstract class AbstractExcelReader<T> extends AbstractReader<T> {
 
-    protected final Locale locale;
-    protected final int skipRows;
-    protected final int maxColumnNum;
     @Getter
-    protected int sheetIndex;
+    private final Locale locale;
     @Getter
-    protected String sheetName;
+    private final int skipRows;
     @Getter
-    private int sheetCount;
+    private final int maxColumnNum;
+    // 下面两个参数确定读取哪一个sheet
+    @Getter
+    private int sheetIndex;
+    @Getter
+    private String sheetName;
+    // 下面两个参数可以在开始解析之前设置
+    @Getter
+    @Setter
+    private BiConsumer<T, Long> rowConsumer;
+    @Getter
+    @Setter
+    private Runnable endCall;
+
+    private OPCPackage pkg;
     @Getter
     private StylesTable stylesTable;
     private SharedStrings sharedStringsTable;
-
-    private OPCPackage pkg;
-    protected InputSource sheetSource;
-    protected XMLReader xmlReader;
+    @Getter
+    private int sheetCount;
+    private Comments comments;
+    private InputSource sheetSource;
+    private XMLReader xmlReader;
 
     protected AtomicBoolean started = new AtomicBoolean(false);
 
-    @Setter
-    protected BiConsumer<T, Long> rowConsumer;
-    @Setter
-    protected Runnable endCall;
-
-    protected AbstractExcelReader(AbstractExcelReaderBuilder builder) {
+    protected AbstractExcelReader(AbstractExcelReaderBuilder<?, ?> builder) {
         super(builder.file);
         this.locale = builder.locale;
         this.skipRows = builder.skipRows;
@@ -73,56 +82,66 @@ public abstract class AbstractExcelReader<T> extends AbstractReader<T> {
         this.sheetName = builder.sheetName;
     }
 
+    /**
+     * 可能抛出异常的初始化操作：读取文件，获取全局属性，确定读取的sheet
+     */
     protected void init() throws Exception {
         ZipSecureFile.setMinInflateRatio(0.005);
         pkg = OPCPackage.open(file, PackageAccess.READ);
         XSSFReader xssfReader = new XSSFReader(pkg);
         stylesTable = xssfReader.getStylesTable();
         sharedStringsTable = new ReadOnlySharedStringsTable(pkg);
-        // decide which sheet
+
+        // 遍历得到所有的sheet的相关信息
         XSSFReader.SheetIterator sheetIterator = (XSSFReader.SheetIterator) xssfReader.getSheetsData();
-        InputStream sheetStream = null;
         List<String> names = new ArrayList<>();
+        List<Comments> commentsList = new ArrayList<>();
         List<InputStream> streams = new ArrayList<>();
         while (sheetIterator.hasNext()) {
-            InputStream next = sheetIterator.next();
             names.add(sheetIterator.getSheetName());
-            streams.add(next);
+            commentsList.add(sheetIterator.getSheetComments());
+            streams.add(sheetIterator.next());
         }
         sheetCount = names.size();
-        // 设定了sheetIndex值
+
+        // 决定读取哪一个sheet
+        InputStream sheetStream = null;
+        // 如果设定了sheetIndex值
         if (sheetIndex != 0) {
             if (sheetIndex < 0 || sheetIndex >= sheetCount) {
                 throw new IllegalArgumentException("incorrect sheetIndex");
             }
             sheetName = names.get(sheetIndex);
+            comments = commentsList.get(sheetIndex);
             sheetStream = streams.get(sheetIndex);
         }
-        // 设定了sheetName
+        // 如果设定了sheetName
         else if (sheetName != null) {
-            int idx = names.indexOf(sheetName);
-            if (idx == -1) {
+            sheetIndex = names.indexOf(sheetName);
+            if (sheetIndex == -1) {
                 throw new IllegalArgumentException("incorrect sheetName");
             }
-            sheetIndex = idx;
-            sheetStream = streams.get(idx);
-        } else {
+            comments = commentsList.get(sheetIndex);
+            sheetStream = streams.get(sheetIndex);
+        }
+        // 默认读取第一个sheet
+        else {
             sheetName = names.get(0);
+            comments = commentsList.get(0);
             sheetStream = streams.get(0);
         }
+        // 关闭其余的流
+        for (int i = 0; i < streams.size(); i++) {
+            if (i != sheetIndex) {
+                streams.get(i).close();
+            }
+        }
+        // 目标
+        sheetSource = new InputSource(sheetStream);
+
         // create xml reader
         xmlReader = XMLReaderFactory.createXMLReader();
-        sheetSource = new InputSource(sheetStream);
     }
-
-    /**
-     * customize ContentHandler
-     *
-     * @param stylesTable
-     * @param sharedStrings
-     * @return
-     */
-    protected abstract DefaultHandler getContentHandler(StylesTable stylesTable, SharedStrings sharedStrings);
 
     /**
      * 启动解析，同步方法，可放入单独的线程中。
@@ -140,7 +159,7 @@ public abstract class AbstractExcelReader<T> extends AbstractReader<T> {
                 return;
             }
         }
-        xmlReader.setContentHandler(getContentHandler(stylesTable, sharedStringsTable));
+        xmlReader.setContentHandler(getContentHandler(stylesTable, sharedStringsTable, comments));
         try {
             xmlReader.parse(sheetSource);
         } catch (IOException | SAXException e) {
@@ -150,6 +169,15 @@ public abstract class AbstractExcelReader<T> extends AbstractReader<T> {
             Helper.closeQuietly(sheetSource.getByteStream());
         }
     }
+
+    /**
+     * customize ContentHandler
+     *
+     * @param stylesTable   格式索引表
+     * @param sharedStrings 共享字符串表
+     * @return 数据处理回调
+     */
+    protected abstract DefaultHandler getContentHandler(StylesTable stylesTable, SharedStrings sharedStrings, Comments comments);
 
     @Override
     protected Closeable getOpenedResource() {
@@ -161,9 +189,34 @@ public abstract class AbstractExcelReader<T> extends AbstractReader<T> {
         pkg.close();
     }
 
-    @SuppressWarnings("unchecked")
-    public static abstract class AbstractExcelReaderBuilder<T extends AbstractExcelReaderBuilder<T>> {
-        protected File file;
+    /**
+     * 同步方法，在解析完成后才会返回
+     *
+     * @return Iterator 注意，在解析发生异常时，会返回null
+     */
+    @Override
+    protected Iterator<T> genIterator() {
+        // new data storage
+        List<T> storage = new ArrayList<>();
+        // set default callback
+        setRowConsumer((row, idx) -> {
+            storage.add(row);
+        });
+        try {
+            parse();
+        } catch (IOException | SAXException e) {
+            return null;
+        }
+        return storage.iterator();
+    }
+
+    /**
+     *
+     */
+    public static abstract class AbstractExcelReaderBuilder<
+            R extends AbstractExcelReader<?>,
+            B extends AbstractExcelReaderBuilder<R, B>> {
+        protected final File file;
         private Locale locale;
         private int skipRows = 0;
         private int maxColumnNum;
@@ -177,43 +230,59 @@ public abstract class AbstractExcelReader<T> extends AbstractReader<T> {
         /**
          * 设定Locale
          */
-        public T locale(Locale locale) {
+        public B locale(Locale locale) {
             this.locale = locale;
-            return (T) this;
+            return self();
         }
 
         /**
          * 设定读取第几个sheet，从0开始，优先于sheetName
          */
-        public T sheetIndex(int sheetIndex) {
+        public B sheetIndex(int sheetIndex) {
             this.sheetIndex = sheetIndex;
             this.sheetName = null;
-            return (T) this;
+            return self();
         }
 
         /**
          * 设定要读取的sheet
          */
-        public T sheetName(String sheetName) {
+        public B sheetName(String sheetName) {
             this.sheetName = sheetName;
-            return (T) this;
+            return self();
         }
 
         /**
          * 设定跳过的起始行数，空行不算
          */
-        public T skipRows(int skipRows) {
+        public B skipRows(int skipRows) {
             this.skipRows = skipRows;
-            return (T) this;
+            return self();
         }
 
         /**
          * 设定读取的最大列数
          */
-        public T maxColumnNum(int maxColumnNum) {
+        public B maxColumnNum(int maxColumnNum) {
             this.maxColumnNum = maxColumnNum;
-            return (T) this;
+            return self();
         }
+
+        public R build() throws Exception {
+            R reader = null;
+            try {
+                reader = createReader();
+                reader.init();
+                return reader;
+            } catch (Exception e) {
+                Helper.closeQuietly(reader);
+                throw e;
+            }
+        }
+
+        protected abstract B self();
+
+        protected abstract R createReader();
 
     }
 }

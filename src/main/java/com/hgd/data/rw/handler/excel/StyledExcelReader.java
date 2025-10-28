@@ -1,25 +1,20 @@
 package com.hgd.data.rw.handler.excel;
 
-import com.hgd.data.rw.common.Helper;
-import com.hgd.data.rw.customized.CustomXssfSheetXmlHandler;
-import com.hgd.data.rw.customized.CustomXssfSheetXmlHandler.SheetStyle;
-import com.hgd.data.rw.customized.CustomXssfSheetXmlHandler.StyledRow;
-import com.hgd.data.rw.customized.PlainNumFormatterProxy;
-import com.hgd.data.rw.customized.StyledSheetContentsHandler;
+import com.hgd.data.rw.handler.excel.customized.CustomXssfSheetXmlHandler;
+import com.hgd.data.rw.handler.excel.customized.CustomXssfSheetXmlHandler.CustomSheetContentsHandler;
+import com.hgd.data.rw.handler.excel.customized.DataFormatterPlainNumProxy;
+import com.hgd.data.rw.handler.excel.customized.StyledEleDef.SheetStyle;
+import com.hgd.data.rw.handler.excel.customized.StyledEleDef.StyledRow;
+import com.hgd.data.rw.handler.excel.customized.StyledSheetContentsHandler;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.DataFormatter;
+import org.apache.poi.xssf.model.Comments;
 import org.apache.poi.xssf.model.SharedStrings;
 import org.apache.poi.xssf.model.StylesTable;
-import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
 import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.function.BiConsumer;
 
 /**
  * @author hgd
@@ -37,71 +32,43 @@ public class StyledExcelReader extends AbstractExcelReader<StyledRow> {
     }
 
     @Override
-    protected Iterator<StyledRow> genIterator() {
-        // new data storage
-        List<StyledRow> storage = new ArrayList<>();
-        // set default callback
-        setRowConsumer(new DefaultRowConsumer(storage));
+    protected DefaultHandler getContentHandler(StylesTable stylesTable, SharedStrings sharedStrings, Comments comments) {
+        DataFormatter dataFormatter = new DataFormatter(getLocale());
         try {
-            parse();
-        } catch (IOException | SAXException e) {
-            return null;
-        }
-        return storage.iterator();
-    }
-
-    @Override
-    protected DefaultHandler getContentHandler(StylesTable stylesTable, SharedStrings sharedStrings) {
-        DataFormatter dataFormatter = new DataFormatter(locale);
-        try {
-            dataFormatter = PlainNumFormatterProxy.createProxy(dataFormatter);
+            dataFormatter = DataFormatterPlainNumProxy.createProxy(dataFormatter);
         } catch (InstantiationException | IllegalAccessException e) {
             log.error("Failed to create proxy for DataFormatter", e);
         }
-        return new CustomXssfSheetXmlHandler(stylesTable, sharedStrings, getSheetContentsHandler(), dataFormatter, false);
+        return new CustomXssfSheetXmlHandler(stylesTable, comments, sharedStrings, getSheetContentsHandler(), dataFormatter, false);
     }
 
-    protected CustomXssfSheetXmlHandler.SheetContentsHandler getSheetContentsHandler() {
-        StyledSheetContentsHandler sheetHandler = new StyledSheetContentsHandler(skipRows, maxColumnNum, rowConsumer, endCall);
+    protected CustomSheetContentsHandler getSheetContentsHandler() {
+        StyledSheetContentsHandler sheetHandler = new StyledSheetContentsHandler(getSkipRows(), getMaxColumnNum(), getRowConsumer(), getEndCall());
         sheetStyle = sheetHandler.getSheetStyle();
         return sheetHandler;
     }
 
-    public static class StyledExcelReaderBuilder extends AbstractExcelReaderBuilder<StyledExcelReaderBuilder> {
+    public static class StyledExcelReaderBuilder extends AbstractExcelReaderBuilder<
+            StyledExcelReader,
+            StyledExcelReaderBuilder> {
 
         private StyledExcelReaderBuilder(File file) {
             super(file);
         }
 
-        public StyledExcelReader build() throws Exception {
-            StyledExcelReader reader = null;
-            try {
-                reader = new StyledExcelReader(this);
-                reader.init();
-                return reader;
-            } catch (Exception e) {
-                Helper.closeQuietly(reader);
-                throw e;
-            }
+        @Override
+        protected StyledExcelReaderBuilder self() {
+            return this;
+        }
+
+        @Override
+        protected StyledExcelReader createReader() {
+            return new StyledExcelReader(this);
         }
     }
 
     public static StyledExcelReaderBuilder builder(File file) {
         return new StyledExcelReaderBuilder(file);
-    }
-
-    private static final class DefaultRowConsumer implements BiConsumer<StyledRow, Long> {
-
-        private List<StyledRow> storage;
-
-        private DefaultRowConsumer(List<StyledRow> storage) {
-            this.storage = storage;
-        }
-
-        @Override
-        public void accept(StyledRow row, Long idx) {
-            storage.add(row);
-        }
     }
 
 }

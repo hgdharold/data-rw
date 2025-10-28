@@ -7,15 +7,12 @@ import com.healthmarketscience.jackcess.Table;
 import com.hgd.data.rw.common.Helper;
 import com.hgd.data.rw.handler.AbstractReader;
 import lombok.Getter;
-import lombok.Setter;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
-import java.util.Iterator;
-import java.util.NoSuchElementException;
-import java.util.Set;
+import java.util.*;
 
 /**
  * 读取access文件
@@ -27,14 +24,17 @@ public class AccessReader extends AbstractReader<Row> {
 
     @Getter
     private Database database;
-    private Table table;
-    @Getter
-    private int tableCount;
+
     @Getter
     private Set<String> tableNames;
+
     @Getter
-    @Setter
     private String tableName;
+
+    private Table table;
+
+    @Getter
+    private final Map<String, String> columnNameTypeMap = new HashMap<>();
 
     private AccessReader(Builder builder) {
         super(builder.file);
@@ -48,17 +48,19 @@ public class AccessReader extends AbstractReader<Row> {
 
     private AccessReader init() throws IOException {
         database = new DatabaseBuilder().setAutoSync(false).setReadOnly(true).setFile(file).open();
+        tableNames = database.getTableNames();
+
         if (StringUtils.isNotBlank(tableName)) {
             table = database.getTable(tableName);
         } else {
+            // 默认第一个表
             table = database.iterator().next();
         }
         if (table == null) {
             throw new NoSuchElementException("table not exist");
         }
         tableName = table.getName();
-        tableNames = database.getTableNames();
-        tableCount = tableNames.size();
+        table.getColumns().forEach(col -> columnNameTypeMap.put(col.getName(), col.getType().name()));
         return this;
     }
 
@@ -77,7 +79,7 @@ public class AccessReader extends AbstractReader<Row> {
     }
 
     public static class Builder {
-        private File file;
+        private final File file;
         private String tableName;
 
         private Builder(File file) {
