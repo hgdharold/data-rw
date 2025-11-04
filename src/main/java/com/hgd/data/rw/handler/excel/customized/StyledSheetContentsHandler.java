@@ -3,8 +3,8 @@ package com.hgd.data.rw.handler.excel.customized;
 import com.hgd.data.rw.handler.excel.customized.StyledEleDef.SheetStyle;
 import com.hgd.data.rw.handler.excel.customized.StyledEleDef.StyledCell;
 import com.hgd.data.rw.handler.excel.customized.StyledEleDef.StyledRow;
-import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
+import org.apache.logging.log4j.Logger;
+import org.apache.poi.logging.PoiLogManager;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.util.CellReference;
@@ -19,8 +19,8 @@ import java.util.function.BiConsumer;
  * @date 2020/08/11
  */
 
-@Slf4j
 public class StyledSheetContentsHandler implements CustomXssfSheetXmlHandler.CustomSheetContentsHandler {
+    private static final Logger LOG = PoiLogManager.getLogger(StyledSheetContentsHandler.class);
 
     private final int skipRows;
     private final int maxColumnNum;
@@ -31,7 +31,7 @@ public class StyledSheetContentsHandler implements CustomXssfSheetXmlHandler.Cus
     private boolean skipCurrentRow = false;
     private StyledRow row;
     private long index;
-    @Getter
+
     private final SheetStyle sheetStyle = new SheetStyle();
 
     public StyledSheetContentsHandler(int skipRows, int maxColumnNum, BiConsumer<StyledRow, Long> rowConsumer, Runnable endCall) {
@@ -84,12 +84,12 @@ public class StyledSheetContentsHandler implements CustomXssfSheetXmlHandler.Cus
 
     @Override
     public void headerFooter(String text, boolean isHeader, String tagName) {
-        log.trace("Header/Footer: text:{} isHeader:{} tagName:{}", text, isHeader, tagName);
+        LOG.atTrace().log("Header/Footer: text:{} isHeader:{} tagName:{}", text, isHeader, tagName);
     }
 
     @Override
     public void endSheetData() {
-        log.trace("sheet data complete!");
+        LOG.atTrace().log("sheet data complete!");
     }
 
     @Override
@@ -98,6 +98,10 @@ public class StyledSheetContentsHandler implements CustomXssfSheetXmlHandler.Cus
         if (endCall != null) {
             endCall.run();
         }
+    }
+
+    public SheetStyle getSheetStyle() {
+        return sheetStyle;
     }
 
 }

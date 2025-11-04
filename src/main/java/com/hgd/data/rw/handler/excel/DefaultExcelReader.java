@@ -2,13 +2,14 @@ package com.hgd.data.rw.handler.excel;
 
 import com.hgd.data.rw.handler.excel.customized.DataFormatterPlainNumProxy;
 import com.hgd.data.rw.handler.excel.customized.DefaultSheetContentsHandler;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.DataFormatter;
 import org.apache.poi.xssf.eventusermodel.XSSFSheetXMLHandler;
 import org.apache.poi.xssf.eventusermodel.XSSFSheetXMLHandler.SheetContentsHandler;
 import org.apache.poi.xssf.model.Comments;
 import org.apache.poi.xssf.model.SharedStrings;
 import org.apache.poi.xssf.model.StylesTable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.xml.sax.helpers.DefaultHandler;
 
 import java.io.File;
@@ -18,8 +19,9 @@ import java.util.Locale;
  * @author hgd
  * @date 2020/08/11
  */
-@Slf4j
 public class DefaultExcelReader extends AbstractExcelReader<String[]> {
+
+    private static final Logger log = LoggerFactory.getLogger(DefaultExcelReader.class);
 
     private DefaultExcelReader(DefaultExcelReaderBuilder builder) {
         super(builder);

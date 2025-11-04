@@ -6,7 +6,6 @@ import com.healthmarketscience.jackcess.Row;
 import com.healthmarketscience.jackcess.Table;
 import com.hgd.data.rw.common.Helper;
 import com.hgd.data.rw.handler.AbstractReader;
-import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.Closeable;
@@ -22,18 +21,11 @@ import java.util.*;
  */
 public class AccessReader extends AbstractReader<Row> {
 
-    @Getter
     private Database database;
-
-    @Getter
     private Set<String> tableNames;
-
-    @Getter
     private String tableName;
-
     private Table table;
 
-    @Getter
     private final Map<String, String> columnNameTypeMap = new HashMap<>();
 
     private AccessReader(Builder builder) {
@@ -47,7 +39,11 @@ public class AccessReader extends AbstractReader<Row> {
     }
 
     private AccessReader init() throws IOException {
-        database = new DatabaseBuilder().setAutoSync(false).setReadOnly(true).setFile(file).open();
+        database = new DatabaseBuilder()
+                .setAutoSync(false)
+                .setReadOnly(true)
+                .setIgnoreBrokenSystemCatalogIndex(true)
+                .setFile(file).open();
         tableNames = database.getTableNames();
 
         if (StringUtils.isNotBlank(tableName)) {
@@ -105,6 +101,22 @@ public class AccessReader extends AbstractReader<Row> {
 
     public static Builder builder(File file) {
         return new Builder(file);
+    }
+
+    public Database getDatabase() {
+        return database;
+    }
+
+    public Set<String> getTableNames() {
+        return tableNames;
+    }
+
+    public String getTableName() {
+        return tableName;
+    }
+
+    public Map<String, String> getColumnNameTypeMap() {
+        return columnNameTypeMap;
     }
 
 }

@@ -1,5 +1,6 @@
 package com.hgd.data.rw.handler.txt;
 
+import com.hgd.data.rw.common.CharsetDetector;
 import com.hgd.data.rw.handler.AbstractReader;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
@@ -8,6 +9,8 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.util.Iterator;
+
+import static com.hgd.data.rw.common.CharsetDetector.detectEncoding;
 
 /**
  * @author hgd
@@ -24,7 +27,8 @@ public class TxtReader extends AbstractReader<String> {
     }
 
     private void init() throws IOException {
-        this.lineIterator = FileUtils.lineIterator(file);
+        CharsetDetector.CharsetDetectionResult detectedEncoding = detectEncoding(file);
+        this.lineIterator = FileUtils.lineIterator(file, detectedEncoding.charset);
     }
 
     @Override

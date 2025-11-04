@@ -2,9 +2,6 @@ package com.hgd.data.rw.handler.excel;
 
 import com.hgd.data.rw.common.Helper;
 import com.hgd.data.rw.handler.AbstractReader;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.openxml4j.opc.OPCPackage;
 import org.apache.poi.openxml4j.opc.PackageAccess;
 import org.apache.poi.openxml4j.util.ZipSecureFile;
@@ -13,6 +10,8 @@ import org.apache.poi.xssf.eventusermodel.XSSFReader;
 import org.apache.poi.xssf.model.Comments;
 import org.apache.poi.xssf.model.SharedStrings;
 import org.apache.poi.xssf.model.StylesTable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
@@ -39,33 +38,23 @@ import java.util.function.BiConsumer;
  * @author hgd
  * @date 2020/4/23
  */
-@Slf4j
 public abstract class AbstractExcelReader<T> extends AbstractReader<T> {
 
-    @Getter
+    private static final Logger log = LoggerFactory.getLogger(AbstractExcelReader.class);
+
     private final Locale locale;
-    @Getter
     private final int skipRows;
-    @Getter
     private final int maxColumnNum;
     // 下面两个参数确定读取哪一个sheet
-    @Getter
     private int sheetIndex;
-    @Getter
     private String sheetName;
     // 下面两个参数可以在开始解析之前设置
-    @Getter
-    @Setter
     private BiConsumer<T, Long> rowConsumer;
-    @Getter
-    @Setter
     private Runnable endCall;
 
     private OPCPackage pkg;
-    @Getter
     private StylesTable stylesTable;
     private SharedStrings sharedStringsTable;
-    @Getter
     private int sheetCount;
     private Comments comments;
     private InputSource sheetSource;
@@ -98,9 +87,10 @@ public abstract class AbstractExcelReader<T> extends AbstractReader<T> {
         List<Comments> commentsList = new ArrayList<>();
         List<InputStream> streams = new ArrayList<>();
         while (sheetIterator.hasNext()) {
+            InputStream next = sheetIterator.next();
             names.add(sheetIterator.getSheetName());
             commentsList.add(sheetIterator.getSheetComments());
-            streams.add(sheetIterator.next());
+            streams.add(next);
         }
         sheetCount = names.size();
 
@@ -152,7 +142,7 @@ public abstract class AbstractExcelReader<T> extends AbstractReader<T> {
         }
         synchronized (this) {
             if (!started.get()) {
-                log.info("开始解析：{}", file.getPath());
+                log.trace("开始解析：{}", file.getPath());
                 started.set(true);
                 this.notifyAll();
             } else {
@@ -284,5 +274,51 @@ public abstract class AbstractExcelReader<T> extends AbstractReader<T> {
 
         protected abstract R createReader();
 
+    }
+
+    public Locale getLocale() {
+        return locale;
+    }
+
+    public int getSkipRows() {
+        return skipRows;
+    }
+
+    public int getMaxColumnNum() {
+        return maxColumnNum;
+    }
+
+    public int getSheetIndex() {
+        return sheetIndex;
+    }
+
+    public String getSheetName() {
+        return sheetName;
+    }
+
+    public BiConsumer<T, Long> getRowConsumer() {
+        return rowConsumer;
+    }
+
+    public AbstractExcelReader<T> setRowConsumer(BiConsumer<T, Long> rowConsumer) {
+        this.rowConsumer = rowConsumer;
+        return this;
+    }
+
+    public Runnable getEndCall() {
+        return endCall;
+    }
+
+    public AbstractExcelReader<T> setEndCall(Runnable endCall) {
+        this.endCall = endCall;
+        return this;
+    }
+
+    public StylesTable getStylesTable() {
+        return stylesTable;
+    }
+
+    public int getSheetCount() {
+        return sheetCount;
     }
 }

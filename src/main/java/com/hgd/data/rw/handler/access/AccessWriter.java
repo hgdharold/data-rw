@@ -3,9 +3,10 @@ package com.hgd.data.rw.handler.access;
 import com.healthmarketscience.jackcess.Database;
 import com.healthmarketscience.jackcess.DatabaseBuilder;
 import com.healthmarketscience.jackcess.Table;
-import com.hgd.data.rw.handler.access.customized.AccessUtil;
 import com.hgd.data.rw.handler.Writer;
-import lombok.extern.slf4j.Slf4j;
+import com.hgd.data.rw.handler.access.customized.AccessUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -19,10 +20,10 @@ import java.util.Map;
  * @date 2020/7/10
  */
 
-@Slf4j
 public class AccessWriter implements Writer<Map<String, Object>> {
+    private static final Logger log = LoggerFactory.getLogger(AccessWriter.class);
 
-    private Table table;
+    private final Table table;
     private boolean flush = true;
 
     public AccessWriter(Table table) {
@@ -56,18 +57,6 @@ public class AccessWriter implements Writer<Map<String, Object>> {
         table.getDatabase().close();
     }
 
-    public Table getTable() {
-        return table;
-    }
-
-    public boolean isFlush() {
-        return flush;
-    }
-
-    public void setFlush(boolean flush) {
-        this.flush = flush;
-    }
-
     public static Database cloneDb(File srcFile, File dstFile) throws IOException {
         Database oldDb = AccessUtil.getReadOnlyDatabase(srcFile);
         if (dstFile.exists()) {
@@ -82,5 +71,17 @@ public class AccessWriter implements Writer<Map<String, Object>> {
         Database newDb = AccessUtil.cloneEmptyDatabase(oldDb, dstFile);
         oldDb.close();
         return newDb;
+    }
+
+    public Table getTable() {
+        return table;
+    }
+
+    public boolean isFlush() {
+        return flush;
+    }
+
+    public void setFlush(boolean flush) {
+        this.flush = flush;
     }
 }

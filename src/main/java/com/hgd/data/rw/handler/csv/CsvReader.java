@@ -1,11 +1,19 @@
 package com.hgd.data.rw.handler.csv;
 
+import com.hgd.data.rw.common.CharsetDetector.CharsetDetectionResult;
 import com.hgd.data.rw.common.Helper;
 import com.hgd.data.rw.handler.AbstractReader;
 import com.opencsv.*;
+import org.apache.commons.io.input.BOMInputStream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.nio.charset.Charset;
 import java.util.Iterator;
+
+import static com.hgd.data.rw.common.CharsetDetector.detectEncoding;
+import static org.apache.commons.io.ByteOrderMark.*;
 
 /**
  * 读取scv，可根据不同格式进行配置
@@ -15,6 +23,8 @@ import java.util.Iterator;
  */
 
 public class CsvReader extends AbstractReader<String[]> {
+
+    private static final Logger log = LoggerFactory.getLogger(CsvReader.class);
 
     private final char separator;
     private final boolean ignoreQuotations;
@@ -39,14 +49,29 @@ public class CsvReader extends AbstractReader<String[]> {
     private CsvReader init() throws Exception {
         ICSVParser parser = rfc4180 ? new RFC4180ParserBuilder().withSeparator(separator).build()
                 : new CSVParserBuilder().withSeparator(separator).withIgnoreQuotations(ignoreQuotations).build();
-        BufferedReader bf = null;
+        InputStreamReader isr;
         if (file != null) {
-            bf = new BufferedReader(new FileReader(file));
+            CharsetDetectionResult detectedEncoding = detectEncoding(file);
+            Charset fileEncoding = Charset.forName(detectedEncoding.charset);
+            FileInputStream fis = new FileInputStream(file);
+            BOMInputStream bomIs = BOMInputStream.builder()
+                    .setInputStream(fis)
+                    .setByteOrderMarks(
+                            UTF_8,        // UTF-8 BOM: EF BB BF
+                            UTF_16LE,     // UTF-16 LE BOM: FF FE
+                            UTF_16BE,     // UTF-16 BE BOM: FE FF
+                            UTF_32LE,     // UTF-32 LE BOM: FF FE 00 00
+                            UTF_32BE      // UTF-32 BE BOM: 00 00 FE FF
+                    )
+                    .get();
+            log.trace("file encoding: {}; bom: {}", fileEncoding.name(), bomIs.getBOM());
+            isr = new InputStreamReader(bomIs, fileEncoding);
+        } else if (inputStream != null) {
+            isr = new InputStreamReader(inputStream);
+        } else {
+            throw new Exception("file or inputStream must be not null");
         }
-        if (inputStream != null) {
-            bf = new BufferedReader(new InputStreamReader(inputStream));
-        }
-        openCsvReader = new CSVReaderBuilder(bf).withCSVParser(parser).build();
+        openCsvReader = new CSVReaderBuilder(new BufferedReader(isr)).withCSVParser(parser).build();
         iterator = new CSVIterator(openCsvReader);
         return this;
     }

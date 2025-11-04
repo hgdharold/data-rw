@@ -1,7 +1,8 @@
 package com.hgd.data.rw.handler.excel.customized;
 
 import com.hgd.data.rw.handler.excel.customized.StyledEleDef.SheetStyle;
-import lombok.extern.slf4j.Slf4j;
+import org.apache.logging.log4j.Logger;
+import org.apache.poi.logging.PoiLogManager;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.DataFormatter;
@@ -24,8 +25,9 @@ import static org.apache.poi.xssf.usermodel.XSSFRelation.NS_SPREADSHEETML;
 /**
  * 采用组合模式替代继承，规避父类私有变量访问限制
  */
-@Slf4j
 public class CustomXssfSheetXmlHandler extends DefaultHandler {
+
+    private static final Logger LOG = PoiLogManager.getLogger(CustomXssfSheetXmlHandler.class);
 
     /**
      * 持有原生 XSSFSheetXMLHandler 实例，复用其基础解析逻辑
@@ -205,7 +207,7 @@ public class CustomXssfSheetXmlHandler extends DefaultHandler {
             int idx = Integer.parseInt(styleIdx);
             return stylesTable.getStyleAt(idx);
         } catch (NumberFormatException e) {
-            log.error("Invalid style index: {}", styleIdx, e);
+            LOG.atError().withThrowable(e).log("Failed to parse style index '{}'", styleIdx);
             return null;
         }
     }

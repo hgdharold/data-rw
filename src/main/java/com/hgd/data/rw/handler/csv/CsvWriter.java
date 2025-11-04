@@ -3,10 +3,12 @@ package com.hgd.data.rw.handler.csv;
 import com.hgd.data.rw.handler.Writer;
 import com.opencsv.CSVWriterBuilder;
 import com.opencsv.ICSVWriter;
-import lombok.Getter;
-import lombok.Setter;
 
-import java.io.*;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -19,20 +21,15 @@ import java.util.stream.Collectors;
  */
 public class CsvWriter implements Writer<String[]> {
 
-    @Getter
-    private File file;
+    private final File file;
+    private final ICSVWriter writer;
 
-    @Getter
-    @Setter
     private boolean flush = true;
-    @Getter
     private List<String> header = null;
-
-    private ICSVWriter writer;
 
     public CsvWriter(File file) throws IOException {
         this.file = file;
-        BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file), "utf8"));
+        BufferedWriter bw = Files.newBufferedWriter(file.toPath(), StandardCharsets.UTF_8);
         // TODO builder 设置其他参数
         writer = new CSVWriterBuilder(bw).build();
     }
@@ -87,5 +84,20 @@ public class CsvWriter implements Writer<String[]> {
         }).toArray(String[]::new);
     }
 
+    public File getFile() {
+        return file;
+    }
+
+    public boolean isFlush() {
+        return flush;
+    }
+
+    public void setFlush(boolean flush) {
+        this.flush = flush;
+    }
+
+    public List<String> getHeader() {
+        return header;
+    }
 
 }
