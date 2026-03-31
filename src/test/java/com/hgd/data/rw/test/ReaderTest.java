@@ -12,6 +12,7 @@ import com.hgd.data.rw.handler.excel.DefaultExcelReader;
 import com.hgd.data.rw.handler.excel.StyledExcelReader;
 import com.hgd.data.rw.handler.excel.customized.ExcelUtil;
 import com.hgd.data.rw.handler.excel.customized.StyledEleDef.StyledRow;
+import com.opencsv.RFC4180ParserBuilder;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.junit.Test;
@@ -32,32 +33,29 @@ import java.util.concurrent.TimeUnit;
  * @date 2020/4/26
  */
 
-public class ReaderExample {
+public class ReaderTest {
 
     @Test
     public void testCsv() {
-        File file = new File("/Users/hgd/work/workspace/projects/data-rw/src/test/java/com/hgd/data/temp/examples/sample/IMP_LESOTHO_CD_DEF_202303.csv");
+        File file = new File("/Users/hgd/Downloads/work-temp-data/EXP_EAEU_CD_DEF_202509.csv");
+        if (!file.exists()) {
+            System.out.println("file not exist");
+            return;
+        }
         long start = System.currentTimeMillis();
         int count = 0;
-        String[] upperRow;
         String[] row = new String[0];
         try (
-                Reader<String[]> reader = CsvReader.builder(file)
-//                        .separator('\t')
-//                        .ignoreQuotations(false)
-//                        .rfc4180(true)
-                        .build()
+                Reader<String[]> reader = CsvReader.createReader(file, new RFC4180ParserBuilder())
+//                Reader<String[]> reader = CsvReader.createReader(file, new CSVParserBuilder())
         ) {
             Iterator<String[]> iterator = reader.iterator();
             String[] head = iterator.next();
+            System.out.println(Arrays.toString(head));
             while (iterator.hasNext()) {
                 count++;
-                upperRow = row;
                 row = iterator.next();
-                if (!row[0].matches("^\\d\\d-.*")) {
-                    System.out.println(row);
-                }
-                System.out.println(Helper.kvMap(head, row));
+//                System.out.println(Helper.kvMap(head, row));
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -69,9 +67,11 @@ public class ReaderExample {
 
     @Test
     public void testAccess() {
-//        File file = new File("examples/sample/opq.accdb");
         File file = new File("/Users/hgd/work/temp/厄瓜多尔-IMP-201806.accdb");
-
+        if (!file.exists()) {
+            System.out.println("file not exist");
+            return;
+        }
         long start = System.currentTimeMillis();
         int count = 0;
         try (
@@ -97,6 +97,10 @@ public class ReaderExample {
     @Test
     public void testExcelSynchronize() {
         File file = new File("examples/sample/def.xlsx");
+        if (!file.exists()) {
+            System.out.println("file not exist");
+            return;
+        }
         long start = System.currentTimeMillis();
         int count = 0;
 
@@ -122,6 +126,10 @@ public class ReaderExample {
     @Test
     public void testExcelAsync() {
         File file = new File("examples/sample/def.xlsx");
+        if (!file.exists()) {
+            System.out.println("file not exist");
+            return;
+        }
         long start = System.currentTimeMillis();
         int count = 0;
 
@@ -185,6 +193,10 @@ public class ReaderExample {
     @Test
     public void testStyledExcel() {
         File oldXlsx = new File("examples/sample/test.xlsx");
+        if (!oldXlsx.exists()) {
+            System.out.println("file not exist");
+            return;
+        }
         File newXlsx = new File("examples/sample/test-copy.xlsx");
         if (!newXlsx.exists()) {
             try {

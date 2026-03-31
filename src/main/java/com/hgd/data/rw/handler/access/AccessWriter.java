@@ -54,7 +54,9 @@ public class AccessWriter implements Writer<Map<String, Object>> {
 
     @Override
     public void close() throws IOException {
-        table.getDatabase().close();
+        if (table != null && table.getDatabase() != null) {
+            table.getDatabase().close();
+        }
     }
 
     public static Database cloneDb(File srcFile, File dstFile) throws IOException {

@@ -5,7 +5,6 @@ import com.hgd.data.rw.handler.AbstractReader;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
 
-import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.util.Iterator;
@@ -32,13 +31,15 @@ public class TxtReader extends AbstractReader<String> {
     }
 
     @Override
-    protected Closeable getOpenedResource() {
+    protected Iterator<String> genIterator() {
         return lineIterator;
     }
 
     @Override
-    protected Iterator<String> genIterator() {
-        return lineIterator;
+    public void close() throws IOException {
+        if (lineIterator != null) {
+            lineIterator.close();
+        }
     }
 
     public static class Builder {

@@ -26,29 +26,75 @@ public class CsvReader extends AbstractReader<String[]> {
 
     private static final Logger log = LoggerFactory.getLogger(CsvReader.class);
 
-    private final char separator;
-    private final boolean ignoreQuotations;
-    private final boolean rfc4180;
-
     private final InputStream inputStream;
+    private final ICSVParser icsvParser;
+
     private CSVReader openCsvReader;
 
-    private CsvReader(Builder builder) {
-        super(builder.file);
-        this.separator = builder.separator;
-        this.ignoreQuotations = builder.ignoreQuotations;
-        this.rfc4180 = builder.rfc4180;
-        this.inputStream = builder.inputStream;
+    private CsvReader(File file, ICSVParser icsvParser) {
+        super(file);
+        this.inputStream = null;
+        this.icsvParser = icsvParser;
     }
 
-    @Override
-    protected Closeable getOpenedResource() {
-        return openCsvReader;
+    private CsvReader(InputStream inputStream, ICSVParser icsvParser) {
+        super(null);
+        this.inputStream = inputStream;
+        this.icsvParser = icsvParser;
+    }
+
+    private static CsvReader createReader(
+            File file,
+            InputStream inputStream,
+            ICSVParser icsvParser
+    ) throws Exception {
+        if (file == null && inputStream == null) {
+            throw new IllegalArgumentException("file or inputStream must be not null");
+        }
+        if (icsvParser == null) {
+            icsvParser = new RFC4180Parser();
+        }
+        CsvReader csvReader = null;
+        if (file != null) {
+            csvReader = new CsvReader(file, icsvParser);
+        }
+        if (inputStream != null) {
+            csvReader = new CsvReader(inputStream, icsvParser);
+        }
+
+        try {
+            return csvReader.init();
+        } catch (Exception e) {
+            Helper.closeQuietly(csvReader);
+            throw e;
+        }
+    }
+
+    public static CsvReader createReader(File file) throws Exception {
+        return createReader(file, null, null);
+    }
+
+    public static CsvReader createReader(InputStream inputStream) throws Exception {
+        return createReader(null, inputStream, null);
+    }
+
+    public static CsvReader createReader(File file, RFC4180ParserBuilder icsvParserBuilder) throws Exception {
+        return createReader(file, null, icsvParserBuilder.build());
+    }
+
+    public static CsvReader createReader(InputStream inputStream, RFC4180ParserBuilder icsvParserBuilder) throws Exception {
+        return createReader(null, inputStream, icsvParserBuilder.build());
+    }
+
+    public static CsvReader createReader(File file, CSVParserBuilder csvParserBuilder) throws Exception {
+        return createReader(file, null, csvParserBuilder.build());
+    }
+
+    public static CsvReader createReader(InputStream inputStream, CSVParserBuilder csvParserBuilder) throws Exception {
+        return createReader(null, inputStream, csvParserBuilder.build());
     }
 
     private CsvReader init() throws Exception {
-        ICSVParser parser = rfc4180 ? new RFC4180ParserBuilder().withSeparator(separator).build()
-                : new CSVParserBuilder().withSeparator(separator).withIgnoreQuotations(ignoreQuotations).build();
         InputStreamReader isr;
         if (file != null) {
             CharsetDetectionResult detectedEncoding = detectEncoding(file);
@@ -71,7 +117,7 @@ public class CsvReader extends AbstractReader<String[]> {
         } else {
             throw new Exception("file or inputStream must be not null");
         }
-        openCsvReader = new CSVReaderBuilder(new BufferedReader(isr)).withCSVParser(parser).build();
+        openCsvReader = new CSVReaderBuilder(new BufferedReader(isr)).withCSVParser(icsvParser).build();
         iterator = new CSVIterator(openCsvReader);
         return this;
     }
@@ -81,54 +127,11 @@ public class CsvReader extends AbstractReader<String[]> {
         return iterator;
     }
 
-    public static class Builder {
-        private File file;
-        private InputStream inputStream;
-        private char separator = ICSVParser.DEFAULT_SEPARATOR;
-        private boolean ignoreQuotations = false;
-        private boolean rfc4180 = false;
-
-        private Builder(File file) {
-            this.file = file;
+    @Override
+    public void close() throws IOException {
+        if (openCsvReader != null) {
+            openCsvReader.close();
         }
-
-        private Builder(InputStream inputStream) {
-            this.inputStream = inputStream;
-        }
-
-        public Builder separator(char separator) {
-            this.separator = separator;
-            return this;
-        }
-
-        public Builder ignoreQuotations(boolean ignoreQuotations) {
-            this.ignoreQuotations = ignoreQuotations;
-            return this;
-        }
-
-        public Builder rfc4180(boolean rfc4180) {
-            this.rfc4180 = rfc4180;
-            return this;
-        }
-
-        public CsvReader build() throws Exception {
-            CsvReader reader = null;
-            try {
-                reader = new CsvReader(this).init();
-                return reader;
-            } catch (Exception e) {
-                Helper.closeQuietly(reader);
-                throw e;
-            }
-        }
-    }
-
-    public static Builder builder(File file) {
-        return new Builder(file);
-    }
-
-    public static Builder builder(InputStream inputStream) {
-        return new Builder(inputStream);
     }
 
 }

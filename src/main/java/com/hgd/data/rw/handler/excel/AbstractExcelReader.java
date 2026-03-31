@@ -18,7 +18,6 @@ import org.xml.sax.XMLReader;
 import org.xml.sax.helpers.DefaultHandler;
 import org.xml.sax.helpers.XMLReaderFactory;
 
-import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -170,13 +169,10 @@ public abstract class AbstractExcelReader<T> extends AbstractReader<T> {
     protected abstract DefaultHandler getContentHandler(StylesTable stylesTable, SharedStrings sharedStrings, Comments comments);
 
     @Override
-    protected Closeable getOpenedResource() {
-        return pkg;
-    }
-
-    @Override
     public void close() throws IOException {
-        pkg.close();
+        if (pkg != null) {
+            pkg.close();
+        }
     }
 
     /**

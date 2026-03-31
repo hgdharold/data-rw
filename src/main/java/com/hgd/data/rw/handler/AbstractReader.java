@@ -1,8 +1,6 @@
 package com.hgd.data.rw.handler;
 
-import java.io.Closeable;
 import java.io.File;
-import java.io.IOException;
 import java.util.Iterator;
 
 /**
@@ -27,21 +25,7 @@ public abstract class AbstractReader<T> implements Reader<T> {
 
     /**
      * 生成遍历器
-     *
-     * @return
      */
     protected abstract Iterator<T> genIterator();
-
-    /**
-     * 声明需要关闭的资源
-     *
-     * @return
-     */
-    protected abstract Closeable getOpenedResource();
-
-    @Override
-    public void close() throws IOException {
-        getOpenedResource().close();
-    }
 
 }

@@ -49,6 +49,8 @@ public class StyledExcelWriter implements Writer<StyledRow> {
 
     @Override
     public void close() throws IOException {
-        sheet.getWorkbook().getPackage().close();
+        if (sheet != null) {
+            sheet.getWorkbook().getPackage().close();
+        }
     }
 }

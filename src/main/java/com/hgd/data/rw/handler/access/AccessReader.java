@@ -8,7 +8,6 @@ import com.hgd.data.rw.common.Helper;
 import com.hgd.data.rw.handler.AbstractReader;
 import org.apache.commons.lang3.StringUtils;
 
-import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
@@ -31,11 +30,6 @@ public class AccessReader extends AbstractReader<Row> {
     private AccessReader(Builder builder) {
         super(builder.file);
         this.tableName = builder.tableName;
-    }
-
-    @Override
-    protected Closeable getOpenedResource() {
-        return database;
     }
 
     private AccessReader init() throws IOException {
@@ -72,6 +66,13 @@ public class AccessReader extends AbstractReader<Row> {
         }
         this.tableName = t.getName();
         return t.iterator();
+    }
+
+    @Override
+    public void close() throws IOException {
+        if (database != null) {
+            database.close();
+        }
     }
 
     public static class Builder {
