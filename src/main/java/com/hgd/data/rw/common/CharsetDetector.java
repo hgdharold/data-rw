@@ -174,7 +174,7 @@ public class CharsetDetector {
      */
     private static byte[] readFileSample(File file, int sampleSize) throws IOException {
         try (FileInputStream fis = new FileInputStream(file)) {
-            int actualSampleSize = Math.min(sampleSize, (int) file.length());
+            int actualSampleSize = (int) Math.min(sampleSize, file.length());
             byte[] sample = new byte[actualSampleSize];
             int bytesRead = fis.read(sample);
 
