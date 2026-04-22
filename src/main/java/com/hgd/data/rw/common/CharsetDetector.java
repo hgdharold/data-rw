@@ -13,7 +13,7 @@ public class CharsetDetector {
     private static final Logger log = LoggerFactory.getLogger(CharsetDetector.class);
 
     // 配置常量
-    private static final int SAMPLE_SIZE = 1 * 1024 * 1024;        // 采样1MB
+    private static final int SAMPLE_SIZE = 5 * 1024 * 1024;        // 采样5MB
     private static final int STREAMING_LIMIT = 5 * 1024 * 1024;   // 流式检测上限5MB
     private static final int CONFIDENCE_THRESHOLD = 80;            // 置信度阈值80%
 

@@ -9,7 +9,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
-import java.nio.charset.Charset;
 import java.util.Iterator;
 
 import static com.hgd.data.rw.common.CharsetDetector.detectEncoding;
@@ -98,7 +97,10 @@ public class CsvReader extends AbstractReader<String[]> {
         InputStreamReader isr;
         if (file != null) {
             CharsetDetectionResult detectedEncoding = detectEncoding(file);
-            Charset fileEncoding = Charset.forName(detectedEncoding.charset);
+            String charset = detectedEncoding.charset;
+            if (!"UTF-8".equals(charset)) {
+                log.warn("!!! detected file encoding is not UTF-8: {}", charset);
+            }
             FileInputStream fis = new FileInputStream(file);
             BOMInputStream bomIs = BOMInputStream.builder()
                     .setInputStream(fis)
@@ -110,8 +112,8 @@ public class CsvReader extends AbstractReader<String[]> {
                             UTF_32BE      // UTF-32 BE BOM: 00 00 FE FF
                     )
                     .get();
-            log.trace("file encoding: {}; bom: {}", fileEncoding.name(), bomIs.getBOM());
-            isr = new InputStreamReader(bomIs, fileEncoding);
+            log.trace("file encoding: {}; bom: {}", charset, bomIs.getBOM());
+            isr = new InputStreamReader(bomIs, charset);
         } else if (inputStream != null) {
             isr = new InputStreamReader(inputStream);
         } else {

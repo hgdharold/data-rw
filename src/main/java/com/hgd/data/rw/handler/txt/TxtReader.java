@@ -4,6 +4,8 @@ import com.hgd.data.rw.common.CharsetDetector;
 import com.hgd.data.rw.handler.AbstractReader;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -19,6 +21,8 @@ import static com.hgd.data.rw.common.CharsetDetector.detectEncoding;
  */
 public class TxtReader extends AbstractReader<String> {
 
+    private static final Logger log = LoggerFactory.getLogger(TxtReader.class);
+
     private LineIterator lineIterator;
 
     private TxtReader(File file) {
@@ -27,6 +31,9 @@ public class TxtReader extends AbstractReader<String> {
 
     private void init() throws IOException {
         CharsetDetector.CharsetDetectionResult detectedEncoding = detectEncoding(file);
+        if (!"UTF-8".equals(detectedEncoding.charset)) {
+            log.warn("!!! detected file encoding is not UTF-8: {}", detectedEncoding.charset);
+        }
         this.lineIterator = FileUtils.lineIterator(file, detectedEncoding.charset);
     }
 
